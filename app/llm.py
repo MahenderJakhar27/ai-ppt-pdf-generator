@@ -15,13 +15,23 @@ client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 def extract_json(response):
     raw = response.choices[0].message.content.strip()
 
+    print("\nRAW RESPONSE:\n", raw)
+
+    start = raw.find("{")
+    end = raw.rfind("}")
+
+    if start == -1 or end == -1:
+        raise ValueError("No JSON found")
+
+    json_str = raw[start:end + 1]
+
     try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        match = re.search(r'\{[\s\S]*\}', raw)
-        if not match:
-            raise ValueError(f"Invalid JSON from LLM: {raw}")
-        return json.loads(match.group())
+        data = json.loads(json_str)
+    except Exception as e:
+        print("❌ JSON PARSE FAILED:", json_str)
+        raise e
+
+    return data
 
 
 # =========================
