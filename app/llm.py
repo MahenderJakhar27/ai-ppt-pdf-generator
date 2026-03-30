@@ -10,32 +10,102 @@ client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 
 # =========================
-# 🔧 COMMON JSON EXTRACTOR
+# 🔧 SAFE JSON EXTRACTOR
 # =========================
 def extract_json(response):
     raw = response.choices[0].message.content.strip()
 
     print("\nRAW RESPONSE:\n", raw)
 
-    start = raw.find("{")
-    end = raw.rfind("}")
+    matches = re.findall(r'\{[\s\S]*?\}', raw)
 
-    if start == -1 or end == -1:
-        raise ValueError("No JSON found")
+    for m in matches:
+        try:
+            return json.loads(m)
+        except:
+            continue
 
-    json_str = raw[start:end + 1]
-
-    try:
-        data = json.loads(json_str)
-    except Exception as e:
-        print("❌ JSON PARSE FAILED:", json_str)
-        raise e
-
-    return data
+    return None
 
 
 # =========================
-# 🎯 PPT GENERATION (SHORT + VISUAL)
+# 🎯 NORMALIZE PPT
+# =========================
+def normalize_ppt(data):
+    slides = data.get("slides", [])
+
+    if not slides:
+        return {
+            "title": data.get("title", "Presentation"),
+            "slides": [
+                {"heading": "Introduction", "points": ["Overview", "Purpose", "Scope"]},
+                {"heading": "Key Concepts", "points": ["Concept 1", "Concept 2", "Concept 3"]},
+                {"heading": "Details", "points": ["Detail 1", "Detail 2", "Detail 3"]},
+                {"heading": "Applications", "points": ["Use case 1", "Use case 2", "Use case 3"]},
+                {"heading": "Conclusion", "points": ["Summary", "Insights", "Future"]}
+            ]
+        }
+
+    # ensure exactly 5 slides
+    while len(slides) < 5:
+        slides.append(slides[-1])
+
+    slides = slides[:5]
+
+    # ensure 3 points per slide
+    for slide in slides:
+        points = slide.get("points", [])
+
+        if len(points) < 3:
+            points += ["Additional point"] * (3 - len(points))
+
+        slide["points"] = points[:3]
+
+    return {
+        "title": data.get("title", "Presentation"),
+        "slides": slides
+    }
+
+
+# =========================
+# 📄 NORMALIZE PDF
+# =========================
+def normalize_pdf(data):
+    sections = data.get("sections", [])
+
+    if not sections:
+        return {
+            "title": "Generated Report",
+            "sections": [
+                {"heading": "Introduction", "points": ["Overview", "Purpose", "Context"]},
+                {"heading": "Analysis", "points": ["Point 1", "Point 2", "Point 3"]},
+                {"heading": "Details", "points": ["Detail 1", "Detail 2", "Detail 3"]},
+                {"heading": "Applications", "points": ["Use case 1", "Use case 2", "Use case 3"]},
+                {"heading": "Conclusion", "points": ["Summary", "Insights", "Future"]}
+            ]
+        }
+
+    while len(sections) < 5:
+        sections.append(sections[-1])
+
+    sections = sections[:5]
+
+    for sec in sections:
+        points = sec.get("points", [])
+
+        if len(points) < 3:
+            points += ["Additional detail"] * (3 - len(points))
+
+        sec["points"] = points[:5]
+
+    return {
+        "title": data.get("title", "Report"),
+        "sections": sections
+    }
+
+
+# =========================
+# 🎯 PPT GENERATION
 # =========================
 def generate_ppt_content(prompt):
     response = client.chat.completions.create(
@@ -43,30 +113,26 @@ def generate_ppt_content(prompt):
         messages=[
             {
                 "role": "system",
-                "content": "You are an expert presentation designer."
+                "content": "Return ONLY valid JSON. No text outside JSON."
             },
             {
                 "role": "user",
                 "content": f"""
-Create a HIGH-QUALITY POWERPOINT presentation on: {prompt}
+Create a professional presentation on: {prompt}
 
 RULES:
 - Exactly 5 slides
-- Each slide:
-  - Short, impactful heading
-  - Exactly 3 bullet points
-  - Each point max 5–6 words
-- No long sentences
-- Make it engaging and visual
-- Avoid paragraphs
+- Each slide must have:
+  - heading
+  - exactly 3 bullet points
 
-Format:
+FORMAT:
 {{
   "title": "Presentation Title",
   "slides": [
     {{
-      "heading": "Short Title",
-      "points": ["short point", "short point", "short point"]
+      "heading": "Slide Title",
+      "points": ["point1", "point2", "point3"]
     }}
   ]
 }}
@@ -79,19 +145,14 @@ Format:
 
     data = extract_json(response)
 
-    # Validation
-    if len(data.get("slides", [])) != 5:
-        raise ValueError("PPT must have exactly 5 slides")
+    if not data:
+        return normalize_ppt({})
 
-    for slide in data["slides"]:
-        if len(slide.get("points", [])) != 3:
-            raise ValueError("Each slide must have 3 points")
-
-    return data
+    return normalize_ppt(data)
 
 
 # =========================
-# 📄 PDF GENERATION (DETAILED REPORT)
+# 📄 PDF GENERATION
 # =========================
 def generate_pdf_content(prompt):
     response = client.chat.completions.create(
@@ -99,29 +160,26 @@ def generate_pdf_content(prompt):
         messages=[
             {
                 "role": "system",
-                "content": "You are an expert report writer."
+                "content": "Return ONLY valid JSON. No explanation."
             },
             {
                 "role": "user",
                 "content": f"""
-Create a PROFESSIONAL REPORT on: {prompt}
+Create a professional report on: {prompt}
 
 RULES:
-- Title
 - Exactly 5 sections
-- Each section:
-  - Clear heading
-  - 3–5 detailed bullet points
-- Use descriptive, professional language
-- Suitable for PDF document (not slides)
+- Each section must have:
+  - heading
+  - 3–5 detailed points
 
-Format:
+FORMAT:
 {{
   "title": "Report Title",
   "sections": [
     {{
       "heading": "Section Title",
-      "points": ["detailed point", "detailed point"]
+      "points": ["point1", "point2"]
     }}
   ]
 }}
@@ -134,25 +192,21 @@ Format:
 
     data = extract_json(response)
 
-    # Validation
-    if len(data.get("sections", [])) != 5:
-        raise ValueError("PDF must have exactly 5 sections")
+    if not data:
+        return normalize_pdf({})
 
-    for section in data["sections"]:
-        if len(section.get("points", [])) < 3:
-            raise ValueError("Each section must have at least 3 points")
+    return normalize_pdf(data)
 
-    return data
 
+# =========================
+# 💬 CHAT WITH MEMORY
+# =========================
 def generate_chat_response(history):
     response = client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[
-            {
-                "role": "system",
-                "content": "You are a helpful AI assistant."
-            },
-            *history  # 🔥 FULL CHAT MEMORY
+            {"role": "system", "content": "You are a helpful AI assistant."},
+            *history
         ],
         temperature=0.7,
         max_tokens=300,

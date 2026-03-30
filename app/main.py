@@ -34,19 +34,37 @@ def serve_dashboard():
     
 @app.get("/preview")
 def preview(prompt: str):
-    data = generate_ppt_content(prompt)
+    lower = prompt.lower()
 
-    for slide in data["slides"]:
-        query = f"{prompt} {slide['heading']}"   # 🔥 improved
-        image_url = fetch_image_url(query)
+    if "pdf" in lower or "report" in lower:
+        data = generate_pdf_content(prompt)
 
-        # fallback if no image
-        if not image_url:
-            image_url = fetch_image_url(prompt)
+        # convert sections → slides for preview
+        slides = []
+        for sec in data["sections"]:
+            slides.append({
+                "heading": sec["heading"],
+                "points": sec["points"][:3]
+            })
 
-        slide["image"] = image_url
+        return {
+            "title": data["title"],
+            "slides": slides
+        }
 
-    return data
+    else:
+        data = generate_ppt_content(prompt)
+
+        for slide in data["slides"]:
+            query = f"{prompt} {slide['heading']}"
+            image_url = fetch_image_url(query)
+
+            if not image_url:
+                image_url = fetch_image_url(prompt)
+
+            slide["image"] = image_url
+
+        return data
 
 @app.post("/chat")
 async def chat(request: Request):
