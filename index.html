@@ -94,50 +94,64 @@ button {
 </div>
 
 <script>
-function addMessage(text, type) {
+function addMessage(html, type) {
     const chat = document.getElementById("chat");
 
     const msg = document.createElement("div");
     msg.className = "message " + type;
-    msg.innerHTML = text;
+    msg.innerHTML = html;
 
     chat.appendChild(msg);
     chat.scrollTop = chat.scrollHeight;
 }
 
+function renderSlides(data, prompt) {
+    let html = `<b>${data.title}</b><br><br>`;
+
+    data.slides.forEach((slide, index) => {
+        html += `
+        <div style="
+            background:#1e293b;
+            padding:12px;
+            border-radius:10px;
+            margin-bottom:10px;
+        ">
+            <b>${index + 1}. ${slide.heading}</b>
+            <ul>
+                ${slide.points.map(p => `<li>${p}</li>`).join("")}
+            </ul>
+        </div>
+        `;
+    });
+
+    html += `
+    <div class="downloads">
+        <button onclick="downloadFile('ppt','${prompt}')">Download PPT</button>
+        <button onclick="downloadFile('pdf','${prompt}')">Download PDF</button>
+    </div>
+    `;
+
+    return html;
+}
+
 async function generate() {
     const prompt = document.getElementById("prompt").value;
 
-    if (!prompt) {
-        alert("Enter a topic");
-        return;
-    }
+    if (!prompt) return alert("Enter topic");
 
     addMessage(prompt, "user");
-
-    addMessage("Generating content... ⏳", "bot");
+    addMessage("Generating preview... ⏳", "bot");
 
     try {
-        // Call your backend to generate preview JSON
-        const res = await fetch(`/generate-ppt?prompt=${encodeURIComponent(prompt)}`);
+        const res = await fetch(`/preview?prompt=${encodeURIComponent(prompt)}`);
+        const data = await res.json();
 
-        if (!res.ok) throw new Error("Failed");
+        const previewHTML = renderSlides(data, prompt);
 
-        // Since API returns file, we just show preview text
-        const preview = `
-            <b>Presentation Ready ✅</b><br><br>
-            Topic: ${prompt}<br><br>
-            You can now download:
-            <div class="downloads">
-                <button onclick="downloadFile('ppt','${prompt}')">Download PPT</button>
-                <button onclick="downloadFile('pdf','${prompt}')">Download PDF</button>
-            </div>
-        `;
-
-        addMessage(preview, "bot");
+        addMessage(previewHTML, "bot");
 
     } catch (err) {
-        addMessage("Error generating content ❌", "bot");
+        addMessage("Error generating preview ❌", "bot");
     }
 }
 
@@ -153,6 +167,5 @@ async function downloadFile(type, prompt) {
     a.click();
 }
 </script>
-
 </body>
 </html>
