@@ -111,34 +111,49 @@ def generate_ppt_content(prompt):
     response = client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[
-            {
-                "role": "system",
-                "content": "Return ONLY valid JSON. No text outside JSON."
-            },
-            {
-                "role": "user",
-                "content": f"""
-Create a professional presentation on: {prompt}
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a professional presentation designer. "
+                            "Return ONLY valid JSON. Do not include explanations, markdown, or text outside JSON. "
+                            "Output must start with { and end with }."
+                        )
+                    },
+                    {
+                        "role": "user",
+                        "content": f"""
+                Create a HIGH-QUALITY professional PowerPoint presentation on: "{prompt}"
 
-RULES:
-- Exactly 5 slides
-- Each slide must have:
-  - heading
-  - exactly 3 bullet points
+                STRICT REQUIREMENTS:
+                - Exactly 5 slides
+                - Each slide must contain:
+                - A short, impactful heading (max 6 words)
+                - Exactly 3 bullet points
+                - Each bullet point must be concise (max 6–8 words)
+                - No long sentences
+                - No repetition
+                - Content should feel like real business/academic slides
 
-FORMAT:
-{{
-  "title": "Presentation Title",
-  "slides": [
-    {{
-      "heading": "Slide Title",
-      "points": ["point1", "point2", "point3"]
-    }}
-  ]
-}}
-"""
-            }
-        ],
+                STRUCTURE:
+                1. Introduction
+                2. Key Concepts
+                3. Detailed Explanation
+                4. Real-world Applications
+                5. Conclusion
+
+                OUTPUT FORMAT (STRICT JSON ONLY):
+                {{
+                "title": "Presentation Title",
+                "slides": [
+                    {{
+                    "heading": "Slide Title",
+                    "points": ["point1", "point2", "point3"]
+                    }}
+                ]
+                }}
+                """
+    }
+],
         temperature=0.5,
         max_tokens=700,
     )
@@ -158,34 +173,49 @@ def generate_pdf_content(prompt):
     response = client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[
-            {
-                "role": "system",
-                "content": "Return ONLY valid JSON. No explanation."
-            },
-            {
-                "role": "user",
-                "content": f"""
-Create a professional report on: {prompt}
+    {
+        "role": "system",
+        "content": (
+            "You are an expert report writer. "
+            "Return ONLY valid JSON. Do not include markdown, explanations, or extra text. "
+            "Output must start with { and end with }."
+        )
+    },
+    {
+        "role": "user",
+        "content": f"""
+Create a PROFESSIONAL, well-structured report on: "{prompt}"
 
-RULES:
+STRICT REQUIREMENTS:
 - Exactly 5 sections
-- Each section must have:
-  - heading
-  - 3–5 detailed points
+- Each section must include:
+  - A clear, professional heading
+  - 3 to 5 detailed bullet points
+- Each bullet point should be descriptive but concise
+- Use formal, report-style language
+- Avoid repetition
+- Ensure logical flow between sections
 
-FORMAT:
+STRUCTURE:
+1. Introduction
+2. Background / Overview
+3. Key Analysis
+4. Applications / Use Cases
+5. Conclusion
+
+OUTPUT FORMAT (STRICT JSON ONLY):
 {{
   "title": "Report Title",
   "sections": [
     {{
       "heading": "Section Title",
-      "points": ["point1", "point2"]
+      "points": ["detailed point", "detailed point"]
     }}
   ]
 }}
 """
-            }
-        ],
+    }
+],
         temperature=0.4,
         max_tokens=1000,
     )
