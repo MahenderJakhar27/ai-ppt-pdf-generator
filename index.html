@@ -1,136 +1,157 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>AI PPT & PDF Generator</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>AI PPT & PDF Generator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #0f172a, #1e293b);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-        }
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
 
-        .container {
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(10px);
-            padding: 30px;
-            border-radius: 16px;
-            width: 400px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
+/* Chat container */
+.chat-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
 
-        h1 {
-            margin-bottom: 10px;
-        }
+/* Chat bubbles */
+.message {
+    max-width: 70%;
+    padding: 12px;
+    margin: 10px;
+    border-radius: 12px;
+    line-height: 1.4;
+}
 
-        p {
-            color: #cbd5f5;
-            font-size: 14px;
-        }
+.user {
+    background: #4f46e5;
+    align-self: flex-end;
+}
 
-        input {
-            width: 100%;
-            padding: 12px;
-            border-radius: 10px;
-            border: none;
-            margin-top: 20px;
-            outline: none;
-            font-size: 14px;
-        }
+.bot {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(8px);
+    align-self: flex-start;
+}
 
-        .buttons {
-            margin-top: 20px;
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
+/* Input area */
+.input-area {
+    display: flex;
+    padding: 15px;
+    background: #020617;
+}
 
-        button {
-            padding: 10px 16px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.3s;
-        }
+input {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    outline: none;
+}
 
-        .ppt {
-            background: #4f46e5;
-            color: white;
-        }
+button {
+    margin-left: 10px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+}
 
-        .ppt:hover {
-            background: #4338ca;
-        }
+.generate {
+    background: #4f46e5;
+    color: white;
+}
 
-        .pdf {
-            background: #16a34a;
-            color: white;
-        }
+.downloads {
+    margin-top: 10px;
+}
 
-        .pdf:hover {
-            background: #15803d;
-        }
-
-        .loading {
-            margin-top: 15px;
-            font-size: 14px;
-            display: none;
-        }
-    </style>
+.downloads button {
+    margin-right: 10px;
+    background: #16a34a;
+    color: white;
+}
+</style>
 </head>
+
 <body>
 
-<div class="container">
-    <h1>AI Generator 🚀</h1>
-    <p>Create PPT & PDF using AI instantly</p>
+<div id="chat" class="chat-container"></div>
 
-    <input type="text" id="prompt" placeholder="Enter topic (e.g. AI in Healthcare)" />
-
-    <div class="buttons">
-        <button class="ppt" onclick="downloadFile('ppt')">Download PPT</button>
-        <button class="pdf" onclick="downloadFile('pdf')">Download PDF</button>
-    </div>
-
-    <div class="loading" id="loading">Generating... please wait ⏳</div>
+<div class="input-area">
+    <input id="prompt" placeholder="Ask something like 'AI in Healthcare'" />
+    <button class="generate" onclick="generate()">Send</button>
 </div>
 
 <script>
-    async function downloadFile(type) {
-        const prompt = document.getElementById("prompt").value;
+function addMessage(text, type) {
+    const chat = document.getElementById("chat");
 
-        if (!prompt) {
-            alert("Please enter a topic");
-            return;
-        }
+    const msg = document.createElement("div");
+    msg.className = "message " + type;
+    msg.innerHTML = text;
 
-        const loading = document.getElementById("loading");
-        loading.style.display = "block";
+    chat.appendChild(msg);
+    chat.scrollTop = chat.scrollHeight;
+}
 
-        try {
-            const response = await fetch(`http://localhost:8000/generate-${type}?prompt=${encodeURIComponent(prompt)}`);
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
+async function generate() {
+    const prompt = document.getElementById("prompt").value;
 
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = type === "ppt" ? "presentation.pptx" : "document.pdf";
-            a.click();
-        } catch (error) {
-            alert("Error generating file");
-            console.error(error);
-        }
-
-        loading.style.display = "none";
+    if (!prompt) {
+        alert("Enter a topic");
+        return;
     }
+
+    addMessage(prompt, "user");
+
+    addMessage("Generating content... ⏳", "bot");
+
+    try {
+        // Call your backend to generate preview JSON
+        const res = await fetch(`/generate-ppt?prompt=${encodeURIComponent(prompt)}`);
+
+        if (!res.ok) throw new Error("Failed");
+
+        // Since API returns file, we just show preview text
+        const preview = `
+            <b>Presentation Ready ✅</b><br><br>
+            Topic: ${prompt}<br><br>
+            You can now download:
+            <div class="downloads">
+                <button onclick="downloadFile('ppt','${prompt}')">Download PPT</button>
+                <button onclick="downloadFile('pdf','${prompt}')">Download PDF</button>
+            </div>
+        `;
+
+        addMessage(preview, "bot");
+
+    } catch (err) {
+        addMessage("Error generating content ❌", "bot");
+    }
+}
+
+async function downloadFile(type, prompt) {
+    const res = await fetch(`/generate-${type}?prompt=${encodeURIComponent(prompt)}`);
+    const blob = await res.blob();
+
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+
+    a.href = url;
+    a.download = type === "ppt" ? "presentation.pptx" : "document.pdf";
+    a.click();
+}
 </script>
 
 </body>

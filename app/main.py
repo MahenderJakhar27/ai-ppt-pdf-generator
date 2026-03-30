@@ -43,3 +43,8 @@ def generate_pdf(prompt: str):
 def serve_dashboard():
     with open("index.html") as f:
         return f.read()
+    
+@app.get("/preview")
+def preview(prompt: str):
+    data = generate_content(prompt)
+    return data
