@@ -12,9 +12,14 @@ body {
     font-family: "Segoe UI", sans-serif;
     display: flex;
     height: 100vh;
-    background: #0f172a;
-    color: white;
+    transition: all 0.3s ease;
 }
+
+/* THEMES */
+body.dark { background: #0f172a; color: white; }
+body.light { background: #f1f5f9; color: #0f172a; }
+body.purple { background: #2e1065; color: white; }
+body.green { background: #022c22; color: white; }
 
 /* SIDEBAR */
 .sidebar {
@@ -62,6 +67,18 @@ body {
     padding: 15px;
     text-align: center;
     background: rgba(255,255,255,0.05);
+    position: relative;
+}
+
+/* THEME BUTTON */
+.theme-btn {
+    position: absolute;
+    right: 15px;
+    top: 10px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
 }
 
 /* Chat */
@@ -117,11 +134,30 @@ button {
     color: white;
 }
 
-/* Typing */
-.typing {
-    display: flex;
-    gap: 5px;
+/* Theme dropdown */
+.theme-menu {
+    position: absolute;
+    right: 15px;
+    top: 40px;
+    background: white;
+    color: black;
+    border-radius: 8px;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
 }
+
+.theme-menu div {
+    padding: 8px;
+    cursor: pointer;
+}
+
+.theme-menu div:hover {
+    background: #ddd;
+}
+
+/* Typing */
+.typing { display: flex; gap: 5px; }
 .dot {
     width: 6px;
     height: 6px;
@@ -145,7 +181,7 @@ button {
 
 </head>
 
-<body>
+<body class="dark">
 
 <!-- SIDEBAR -->
 
@@ -157,7 +193,20 @@ button {
 <!-- MAIN -->
 
 <div class="main">
-    <div class="header">🤖 AI Assistant</div>
+    <div class="header">
+        🤖 AI Assistant
+
+
+    <!-- THEME BUTTON -->
+    <button class="theme-btn" onclick="toggleThemeMenu()">🎨</button>
+
+    <div id="themeMenu" class="theme-menu">
+        <div onclick="setTheme('dark')">Dark</div>
+        <div onclick="setTheme('light')">Light</div>
+        <div onclick="setTheme('purple')">Purple</div>
+        <div onclick="setTheme('green')">Green</div>
+    </div>
+</div>
 
 <div id="chat" class="chat-container"></div>
 
@@ -185,6 +234,17 @@ createNewChat();
 input.addEventListener("keypress", e => {
     if (e.key === "Enter") generate();
 });
+
+/* THEME */
+function toggleThemeMenu() {
+    const menu = document.getElementById("themeMenu");
+    menu.style.display = menu.style.display === "flex" ? "none" : "flex";
+}
+
+function setTheme(theme) {
+    document.body.className = theme;
+    document.getElementById("themeMenu").style.display = "none";
+}
 
 /* NEW CHAT */
 function createNewChat() {
@@ -264,13 +324,11 @@ async function generate() {
 
     try {
         const lower = prompt.toLowerCase();
-
-        const isPPT = lower.includes("ppt") || lower.includes("presentation");
-        const isPDF = lower.includes("pdf") || lower.includes("report");
+        const isGen = lower.includes("ppt") || lower.includes("pdf") || lower.includes("presentation");
 
         let res, data;
 
-        if (isPPT || isPDF) {
+        if (isGen) {
             res = await fetch(`/preview?prompt=${encodeURIComponent(prompt)}`);
             data = await res.json();
 
@@ -281,8 +339,8 @@ async function generate() {
             res = await fetch("/chat", {
                 method: "POST",
                 headers: {"Content-Type":"application/json"},
-                body: JSON.stringify({ history })
-                });
+                body: JSON.stringify({ history: chats[currentChatId] })
+            });
 
             data = await res.json();
 
