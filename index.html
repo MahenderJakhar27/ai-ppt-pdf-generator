@@ -185,22 +185,78 @@ function removeTyping() {
     if (typing) typing.remove();
 }
 
+/* 🔥 REAL PPT STYLE PREVIEW */
 function renderSlides(data, prompt) {
-    let html = `<b>${data.title}</b><br>`;
+    let html = `
+        <div style="margin-bottom:10px; font-size:16px;">
+            <b>${data.title}</b>
+        </div>
+
+        <div style="
+            display:flex;
+            gap:16px;
+            overflow-x:auto;
+            padding-bottom:10px;
+        ">
+    `;
 
     data.slides.forEach((slide, index) => {
         html += `
-        <div class="slide">
-            <b>${index + 1}. ${slide.heading}</b>
-            <ul>
+        <div style="
+            min-width:320px;
+            height:180px;
+            background:#0f172a;
+            border-radius:12px;
+            padding:14px;
+            box-shadow:0 8px 20px rgba(0,0,0,0.4);
+            position:relative;
+            transition:0.3s;
+        " onmouseover="this.style.transform='scale(1.05)'"
+           onmouseout="this.style.transform='scale(1)'">
+
+            <div style="
+                font-size:12px;
+                color:#94a3b8;
+                margin-bottom:6px;
+            ">
+                Slide ${index + 1}
+            </div>
+
+            <div style="
+                font-size:15px;
+                font-weight:bold;
+                margin-bottom:8px;
+            ">
+                ${slide.heading}
+            </div>
+
+            <ul style="
+                font-size:12px;
+                padding-left:16px;
+                line-height:1.4;
+                color:#cbd5f5;
+            ">
                 ${slide.points.map(p => `<li>${p}</li>`).join("")}
             </ul>
+
+            <!-- Image placeholder -->
+            <div style="
+                position:absolute;
+                bottom:10px;
+                right:10px;
+                width:60px;
+                height:40px;
+                background:rgba(255,255,255,0.1);
+                border-radius:6px;
+            "></div>
         </div>
         `;
     });
 
+    html += `</div>`;
+
     html += `
-    <div class="downloads">
+    <div class="downloads" style="margin-top:10px;">
         <button onclick="downloadFile('ppt','${prompt}')">Download PPT</button>
         <button onclick="downloadFile('pdf','${prompt}')">Download PDF</button>
     </div>
@@ -247,6 +303,5 @@ async function downloadFile(type, prompt) {
     a.click();
 }
 </script>
-
 </body>
 </html>
