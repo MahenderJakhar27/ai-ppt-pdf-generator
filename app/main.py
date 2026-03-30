@@ -2,8 +2,8 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-
-
+from app.image_service import fetch_image_url
+from fastapi.responses import FileResponse
 from app.llm import generate_content
 from app.ppt_generator import create_ppt
 from app.pdf_generator import create_pdf
@@ -39,12 +39,22 @@ def generate_pdf(prompt: str):
 
 
 
-@app.get("/dashboard", response_class=HTMLResponse)
+@app.get("/dashboard")
 def serve_dashboard():
-    with open("index.html") as f:
-        return f.read()
+    return FileResponse("templates/index.html")
     
 @app.get("/preview")
 def preview(prompt: str):
     data = generate_content(prompt)
+
+    for slide in data["slides"]:
+        query = f"{prompt} {slide['heading']}"   # 🔥 improved
+        image_url = fetch_image_url(query)
+
+        # fallback if no image
+        if not image_url:
+            image_url = fetch_image_url(prompt)
+
+        slide["image"] = image_url
+
     return data
