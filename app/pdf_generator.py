@@ -44,16 +44,11 @@ def create_pdf(data, filename=None):
     elements.append(Spacer(1, 12))
 
     # 🟩 Slides
-    for i, slide in enumerate(data["slides"], start=1):
+    for i, section in enumerate(data["sections"], start=1):
+        elements.append(Paragraph(f"{i}. {section['heading']}", heading_style))
 
-        # Slide heading
-        elements.append(Paragraph(f"{i}. {slide['heading']}", heading_style))
-
-        # Bullet points
-        for point in slide["points"]:
+        for point in section["points"]:
             elements.append(Paragraph(f"• {point}", bullet_style))
-
-        elements.append(Spacer(1, 12))
 
     doc.build(elements)
     return filename
