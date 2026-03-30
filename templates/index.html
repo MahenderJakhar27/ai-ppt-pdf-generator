@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -22,7 +23,20 @@ body {
     text-align: center;
     font-weight: bold;
     background: rgba(255,255,255,0.05);
-    backdrop-filter: blur(10px);
+    position: relative;
+}
+
+/* New Chat Button */
+.new-chat {
+    position: absolute;
+    left: 15px;
+    top: 10px;
+    background: #4f46e5;
+    color: white;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
 }
 
 /* Chat */
@@ -40,8 +54,6 @@ body {
     padding: 14px;
     margin: 10px;
     border-radius: 14px;
-    line-height: 1.5;
-    animation: fadeIn 0.3s ease-in;
 }
 
 .user {
@@ -51,7 +63,6 @@ body {
 
 .bot {
     background: rgba(255,255,255,0.08);
-    backdrop-filter: blur(10px);
     align-self: flex-start;
 }
 
@@ -68,17 +79,14 @@ input {
     border-radius: 12px;
     border: none;
     outline: none;
-    font-size: 14px;
 }
 
 button {
     margin-left: 10px;
     padding: 12px 18px;
-    border: none;
     border-radius: 12px;
+    border: none;
     cursor: pointer;
-    font-weight: bold;
-    transition: 0.3s;
 }
 
 .generate {
@@ -86,18 +94,7 @@ button {
     color: white;
 }
 
-.generate:hover {
-    background: #4338ca;
-}
-
-/* Downloads */
-.downloads button {
-    margin-top: 10px;
-    margin-right: 8px;
-    background: #16a34a;
-}
-
-/* Slide preview card */
+/* Slide */
 .slide {
     background: #1e293b;
     padding: 12px;
@@ -105,12 +102,11 @@ button {
     margin-top: 10px;
 }
 
-/* Typing animation */
+/* Typing */
 .typing {
     display: flex;
     gap: 5px;
 }
-
 .dot {
     width: 6px;
     height: 6px;
@@ -118,30 +114,25 @@ button {
     border-radius: 50%;
     animation: blink 1.4s infinite;
 }
-
-.dot:nth-child(2) { animation-delay: 0.2s; }
-.dot:nth-child(3) { animation-delay: 0.4s; }
-
 @keyframes blink {
-    0%, 80%, 100% { opacity: 0; }
-    40% { opacity: 1; }
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    0%,80%,100%{opacity:0;}
+    40%{opacity:1;}
 }
 </style>
+
 </head>
 
 <body>
 
-<div class="header">🤖 AI Presentation Assistant By MJ</div>
+<div class="header">
+    <button class="new-chat" onclick="newChat()">+ New Chat</button>
+    🤖 AI Presentation Assistant By MJ
+</div>
 
 <div id="chat" class="chat-container"></div>
 
 <div class="input-area">
-    <input id="prompt" placeholder="What can I help you create today?" />
+    <input id="prompt" placeholder="Ask anything or create PPT/PDF..." />
     <button class="generate" onclick="generate()">Send</button>
 </div>
 
@@ -150,26 +141,22 @@ const chat = document.getElementById("chat");
 const input = document.getElementById("prompt");
 
 let isLoading = false;
+let chatHistory = []; // 🔥 MEMORY
 
-/* Welcome */
 window.onload = () => {
-    addMessage(
-        "👋 Hi! I'm your AI assistant.<br><br>What can I help you create today?",
-        "bot"
-    );
-    input.focus();
+    addMessage("👋 Hi! I'm your AI assistant.<br>Ask me anything or create PPT/PDF.", "bot");
 };
 
-/* ENTER KEY SUPPORT 🔥 */
-input.addEventListener("keypress", function(e) {
-    if (e.key === "Enter") {
-        generate();
-    }
+/* ENTER KEY */
+input.addEventListener("keypress", e => {
+    if (e.key === "Enter") generate();
 });
 
-/* THEME */
-function toggleTheme() {
-    document.body.classList.toggle("light");
+/* NEW CHAT */
+function newChat() {
+    chat.innerHTML = "";
+    chatHistory = [];
+    addMessage("👋 New chat started!", "bot");
 }
 
 /* ADD MESSAGE */
@@ -177,78 +164,46 @@ function addMessage(html, type) {
     const msg = document.createElement("div");
     msg.className = "message " + type;
     msg.innerHTML = html;
-
     chat.appendChild(msg);
     chat.scrollTop = chat.scrollHeight;
 }
 
 /* TYPING */
 function showTyping() {
-    const typing = document.createElement("div");
-    typing.className = "message bot typing";
-    typing.id = "typing";
-
-    typing.innerHTML = `
-        <div class="dot"></div>
-        <div class="dot"></div>
-        <div class="dot"></div>
-    `;
-
-    chat.appendChild(typing);
-    chat.scrollTop = chat.scrollHeight;
+    const t = document.createElement("div");
+    t.id = "typing";
+    t.className = "message bot typing";
+    t.innerHTML = `<div class="dot"></div><div class="dot"></div><div class="dot"></div>`;
+    chat.appendChild(t);
 }
-
 function removeTyping() {
-    const typing = document.getElementById("typing");
-    if (typing) typing.remove();
+    const t = document.getElementById("typing");
+    if (t) t.remove();
 }
 
-/* SLIDE PREVIEW (IMPROVED UI) */
+/* RENDER SLIDES */
 function renderSlides(data, prompt) {
-    let html = `
-        <div style="font-weight:bold; margin-bottom:10px;">
-            ${data.title}
-        </div>
+    let html = `<b>${data.title}</b><br><br><div style="display:flex;gap:10px;overflow:auto;">`;
 
-        <div style="
-            display:flex;
-            gap:15px;
-            overflow-x:auto;
-        ">
-    `;
-
-    data.slides.forEach((slide, index) => {
+    data.slides.forEach((s,i)=>{
         html += `
-        <div style="
-            min-width:260px;
-            background:#0f172a;
-            border-radius:12px;
-            padding:12px;
-        ">
-            <small style="color:#94a3b8;">Slide ${index + 1}</small>
-            <div style="font-weight:bold; margin:5px 0;">
-                ${slide.heading}
-            </div>
-            <ul style="font-size:12px;">
-                ${slide.points.map(p => `<li>${p}</li>`).join("")}
-            </ul>
-        </div>
-        `;
+        <div style="min-width:250px;background:#0f172a;padding:10px;border-radius:10px;">
+            <small>Slide ${i+1}</small>
+            <b>${s.heading}</b>
+            <ul>${s.points.map(p=>`<li>${p}</li>`).join("")}</ul>
+        </div>`;
     });
 
-    html += `</div>`;
-
-    html += `
-    <div class="downloads">
+    html += `</div>
+    <div>
         <button onclick="downloadFile('ppt','${prompt}')">Download PPT</button>
         <button onclick="downloadFile('pdf','${prompt}')">Download PDF</button>
-    </div>
-    `;
+    </div>`;
 
     return html;
 }
 
-/* GENERATE */
+/* MAIN LOGIC 🔥 */
 async function generate() {
     if (isLoading) return;
 
@@ -258,22 +213,46 @@ async function generate() {
     isLoading = true;
 
     addMessage(prompt, "user");
-    input.value = "";
+    chatHistory.push({ role: "user", content: prompt });
 
+    input.value = "";
     showTyping();
 
     try {
-        const res = await fetch(`/preview?prompt=${encodeURIComponent(prompt)}`);
-        const data = await res.json();
+        const lower = prompt.toLowerCase();
 
+        const isPPT = lower.includes("ppt") || lower.includes("presentation");
+        const isPDF = lower.includes("pdf") || lower.includes("report");
+
+        let res, data;
+
+        if (isPPT || isPDF) {
+            res = await fetch(`/preview?prompt=${encodeURIComponent(prompt)}`);
+            data = await res.json();
+
+            removeTyping();
+            addMessage(renderSlides(data, prompt), "bot");
+
+            chatHistory.push({ role: "assistant", content: "Generated content" });
+
+        } else {
+            res = await fetch(`/chat`, {
+                method: "POST",
+                headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({ history: chatHistory })
+            });
+
+            data = await res.json();
+
+            removeTyping();
+            addMessage(data.response, "bot");
+
+            chatHistory.push({ role: "assistant", content: data.response });
+        }
+
+    } catch {
         removeTyping();
-
-        const previewHTML = renderSlides(data, prompt);
-        addMessage(previewHTML, "bot");
-
-    } catch (err) {
-        removeTyping();
-        addMessage("❌ Something went wrong. Try again.", "bot");
+        addMessage("❌ Error occurred", "bot");
     }
 
     isLoading = false;
@@ -283,14 +262,14 @@ async function generate() {
 async function downloadFile(type, prompt) {
     const res = await fetch(`/generate-${type}?prompt=${encodeURIComponent(prompt)}`);
     const blob = await res.blob();
-
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
 
+    const a = document.createElement("a");
     a.href = url;
     a.download = type === "ppt" ? "presentation.pptx" : "document.pdf";
     a.click();
 }
 </script>
+
 </body>
 </html>

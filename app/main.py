@@ -2,12 +2,12 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi import Request
 from app.image_service import fetch_image_url
 from fastapi.responses import FileResponse
 from app.ppt_generator import create_ppt
 from app.pdf_generator import create_pdf
-from app.llm import generate_ppt_content
-from app.llm import generate_pdf_content
+from app.llm import generate_ppt_content,generate_chat_response,generate_pdf_content
 
 app = FastAPI()
 
@@ -47,3 +47,12 @@ def preview(prompt: str):
         slide["image"] = image_url
 
     return data
+
+@app.post("/chat")
+async def chat(request: Request):
+    body = await request.json()
+    history = body.get("history", [])
+
+    response = generate_chat_response(history)
+
+    return {"response": response}

@@ -143,3 +143,19 @@ Format:
             raise ValueError("Each section must have at least 3 points")
 
     return data
+
+def generate_chat_response(history):
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a helpful AI assistant."
+            },
+            *history  # 🔥 FULL CHAT MEMORY
+        ],
+        temperature=0.7,
+        max_tokens=300,
+    )
+
+    return response.choices[0].message.content.strip()
