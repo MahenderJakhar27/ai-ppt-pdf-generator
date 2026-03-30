@@ -147,15 +147,32 @@ button {
 
 <script>
 const chat = document.getElementById("chat");
+const input = document.getElementById("prompt");
 
-/* Welcome message */
+let isLoading = false;
+
+/* Welcome */
 window.onload = () => {
     addMessage(
-        "👋 Hi! I'm your AI assistant.<br><br>What can I help you create today?<br><br>Try something like:<br><i>“AI in Healthcare”</i>",
+        "👋 Hi! I'm your AI assistant.<br><br>What can I help you create today?",
         "bot"
     );
+    input.focus();
 };
 
+/* ENTER KEY SUPPORT 🔥 */
+input.addEventListener("keypress", function(e) {
+    if (e.key === "Enter") {
+        generate();
+    }
+});
+
+/* THEME */
+function toggleTheme() {
+    document.body.classList.toggle("light");
+}
+
+/* ADD MESSAGE */
 function addMessage(html, type) {
     const msg = document.createElement("div");
     msg.className = "message " + type;
@@ -165,6 +182,7 @@ function addMessage(html, type) {
     chat.scrollTop = chat.scrollHeight;
 }
 
+/* TYPING */
 function showTyping() {
     const typing = document.createElement("div");
     typing.className = "message bot typing";
@@ -185,70 +203,35 @@ function removeTyping() {
     if (typing) typing.remove();
 }
 
-/* 🔥 REAL PPT STYLE PREVIEW */
+/* SLIDE PREVIEW (IMPROVED UI) */
 function renderSlides(data, prompt) {
     let html = `
-        <div style="margin-bottom:10px; font-size:16px;">
-            <b>${data.title}</b>
+        <div style="font-weight:bold; margin-bottom:10px;">
+            ${data.title}
         </div>
 
         <div style="
             display:flex;
-            gap:16px;
+            gap:15px;
             overflow-x:auto;
-            padding-bottom:10px;
         ">
     `;
 
     data.slides.forEach((slide, index) => {
         html += `
         <div style="
-            min-width:320px;
-            height:180px;
+            min-width:260px;
             background:#0f172a;
             border-radius:12px;
-            padding:14px;
-            box-shadow:0 8px 20px rgba(0,0,0,0.4);
-            position:relative;
-            transition:0.3s;
-        " onmouseover="this.style.transform='scale(1.05)'"
-           onmouseout="this.style.transform='scale(1)'">
-
-            <div style="
-                font-size:12px;
-                color:#94a3b8;
-                margin-bottom:6px;
-            ">
-                Slide ${index + 1}
-            </div>
-
-            <div style="
-                font-size:15px;
-                font-weight:bold;
-                margin-bottom:8px;
-            ">
+            padding:12px;
+        ">
+            <small style="color:#94a3b8;">Slide ${index + 1}</small>
+            <div style="font-weight:bold; margin:5px 0;">
                 ${slide.heading}
             </div>
-
-            <ul style="
-                font-size:12px;
-                padding-left:16px;
-                line-height:1.4;
-                color:#cbd5f5;
-            ">
+            <ul style="font-size:12px;">
                 ${slide.points.map(p => `<li>${p}</li>`).join("")}
             </ul>
-
-            <!-- Image placeholder -->
-            <div style="
-                position:absolute;
-                bottom:10px;
-                right:10px;
-                width:60px;
-                height:40px;
-                background:rgba(255,255,255,0.1);
-                border-radius:6px;
-            "></div>
         </div>
         `;
     });
@@ -256,7 +239,7 @@ function renderSlides(data, prompt) {
     html += `</div>`;
 
     html += `
-    <div class="downloads" style="margin-top:10px;">
+    <div class="downloads">
         <button onclick="downloadFile('ppt','${prompt}')">Download PPT</button>
         <button onclick="downloadFile('pdf','${prompt}')">Download PDF</button>
     </div>
@@ -265,11 +248,14 @@ function renderSlides(data, prompt) {
     return html;
 }
 
+/* GENERATE */
 async function generate() {
-    const input = document.getElementById("prompt");
-    const prompt = input.value;
+    if (isLoading) return;
 
-    if (!prompt) return alert("Enter topic");
+    const prompt = input.value.trim();
+    if (!prompt) return;
+
+    isLoading = true;
 
     addMessage(prompt, "user");
     input.value = "";
@@ -289,8 +275,11 @@ async function generate() {
         removeTyping();
         addMessage("❌ Something went wrong. Try again.", "bot");
     }
+
+    isLoading = false;
 }
 
+/* DOWNLOAD */
 async function downloadFile(type, prompt) {
     const res = await fetch(`/generate-${type}?prompt=${encodeURIComponent(prompt)}`);
     const blob = await res.blob();
