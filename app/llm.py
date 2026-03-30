@@ -17,15 +17,22 @@ def extract_json(response):
 
     print("\nRAW RESPONSE:\n", raw)
 
-    matches = re.findall(r'\{[\s\S]*?\}', raw)
+    # 🔥 remove unwanted words like "Menu"
+    raw = raw.replace("Menu", "")
 
-    for m in matches:
-        try:
-            return json.loads(m)
-        except:
-            continue
+    start = raw.find("{")
+    end = raw.rfind("}")
 
-    return None
+    if start == -1 or end == -1:
+        return None
+
+    json_str = raw[start:end+1]
+
+    try:
+        return json.loads(json_str)
+    except Exception as e:
+        print("JSON ERROR:", e)
+        return None
 
 
 # =========================
