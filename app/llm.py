@@ -17,7 +17,6 @@ def extract_json(response):
 
     print("\nRAW RESPONSE:\n", raw)
 
-    # 🔥 remove unwanted words like "Menu"
     raw = raw.replace("Menu", "")
 
     start = raw.find("{")

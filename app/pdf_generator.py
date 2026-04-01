@@ -21,7 +21,7 @@ def create_pdf(data, filename=None):
     styles = getSampleStyleSheet()
 
     # =========================
-    # 🎨 CUSTOM STYLES
+    #  CUSTOM STYLES
     # =========================
 
     title_style = ParagraphStyle(
@@ -54,13 +54,13 @@ def create_pdf(data, filename=None):
     elements = []
 
     # =========================
-    # 🟦 TITLE
+    # TITLE
     # =========================
     elements.append(Paragraph(f"<b>{data['title']}</b>", title_style))
     elements.append(Spacer(1, 15))
 
     # =========================
-    # 📄 SECTIONS
+    # SECTIONS
     # =========================
     for i, section in enumerate(data["sections"], start=1):
 
@@ -81,7 +81,7 @@ def create_pdf(data, filename=None):
         elements.append(Spacer(1, 15))
 
     # =========================
-    # 📌 FOOTER
+    #  FOOTER
     # =========================
     elements.append(Spacer(1, 20))
     elements.append(
