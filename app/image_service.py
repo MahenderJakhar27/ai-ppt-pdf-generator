@@ -1,11 +1,17 @@
 import requests
 import os
+import uuid
+import tempfile
 from dotenv import load_dotenv
 load_dotenv()
 
 UNSPLASH_ACCESS_KEY = os.getenv("UNSPLASH_ACCESS_KEY")
 
-def fetch_image(query, filename="temp.jpg"):
+def fetch_image(query, filename=None):
+    # ✅ Write to /tmp/ instead of cwd
+    if not filename:
+        filename = os.path.join(tempfile.gettempdir(), f"{uuid.uuid4()}.jpg")
+
     url = "https://api.unsplash.com/photos/random"
 
     params = {
@@ -14,20 +20,31 @@ def fetch_image(query, filename="temp.jpg"):
         "orientation": "landscape"
     }
 
-    response = requests.get(url, params=params)
+    try:
+        response = requests.get(url, params=params, timeout=10)
 
-    if response.status_code != 200:
-        return None
+        if response.status_code != 200:
+            print(f"❌ Unsplash error: {response.status_code} - {response.text}")
+            return None
 
-    data = response.json()
-    image_url = data["urls"]["regular"]
+        data = response.json()
 
-    img_data = requests.get(image_url).content
+        if "urls" not in data:
+            print("❌ No image found for:", query)
+            return None
 
-    with open(filename, "wb") as f:
-        f.write(img_data)
+        image_url = data["urls"]["regular"]
+        img_data = requests.get(image_url, timeout=10).content
 
-    return filename
+        with open(filename, "wb") as f:
+            f.write(img_data)
+
+        return filename
+
+    except Exception as e:
+        print(f"❌ fetch_image failed for '{query}':", e)
+        return None  # ✅ PPT continues without image instead of crashing
+
 
 def fetch_image_url(query):
     url = "https://api.unsplash.com/photos/random"
@@ -39,7 +56,7 @@ def fetch_image_url(query):
     }
 
     try:
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=10)
 
         if response.status_code != 200:
             print("❌ Unsplash API error:", response.status_code, response.text)
