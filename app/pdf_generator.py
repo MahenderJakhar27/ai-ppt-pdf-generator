@@ -3,11 +3,12 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 import uuid
+import tempfile, os
 
 
 def create_pdf(data, filename=None):
     if not filename:
-        filename = f"{uuid.uuid4()}.pdf"
+        filename = os.path.join(tempfile.gettempdir(), f"{uuid.uuid4()}.pdf")
 
     doc = SimpleDocTemplate(
         filename,

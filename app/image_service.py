@@ -6,70 +6,112 @@ from dotenv import load_dotenv
 load_dotenv()
 
 UNSPLASH_ACCESS_KEY = os.getenv("UNSPLASH_ACCESS_KEY")
+TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 
+
+# =========================
+# 🖼 TAVILY IMAGE (relevant)
+# =========================
+def fetch_tavily_image(query):
+    try:
+        response = requests.post(
+            "https://api.tavily.com/search",
+            json={
+                "api_key": TAVILY_API_KEY,
+                "query": query,
+                "max_results": 3,
+                "search_depth": "basic",
+                "include_images": True
+            },
+            timeout=10
+        )
+        if response.status_code == 200:
+            images = response.json().get("images", [])
+            if images:
+                return images[0]
+    except Exception as e:
+        print(f"❌ Tavily image error: {e}")
+    return None
+
+
+# =========================
+# 📥 DOWNLOAD IMAGE TO DISK
+# =========================
+def download_image(url, filename=None):
+    if not filename:
+        filename = os.path.join(tempfile.gettempdir(), f"{uuid.uuid4()}.jpg")
+    try:
+        img_data = requests.get(url, timeout=10).content
+        with open(filename, "wb") as f:
+            f.write(img_data)
+        return filename
+    except Exception as e:
+        print(f"❌ Image download failed: {e}")
+        return None
+
+
+# =========================
+# 🎯 FETCH IMAGE FOR PPT
+# (tries Tavily first, then Unsplash)
+# =========================
 def fetch_image(query, filename=None):
-    # ✅ Write to /tmp/ instead of cwd
     if not filename:
         filename = os.path.join(tempfile.gettempdir(), f"{uuid.uuid4()}.jpg")
 
-    url = "https://api.unsplash.com/photos/random"
+    # ✅ Try Tavily first (more relevant)
+    tavily_url = fetch_tavily_image(query)
+    if tavily_url:
+        result = download_image(tavily_url, filename)
+        if result:
+            return result
 
-    params = {
-        "query": query,
-        "client_id": UNSPLASH_ACCESS_KEY,
-        "orientation": "landscape"
-    }
-
+    # ✅ Fallback to Unsplash
     try:
-        response = requests.get(url, params=params, timeout=10)
-
-        if response.status_code != 200:
-            print(f"❌ Unsplash error: {response.status_code} - {response.text}")
-            return None
-
-        data = response.json()
-
-        if "urls" not in data:
-            print("❌ No image found for:", query)
-            return None
-
-        image_url = data["urls"]["regular"]
-        img_data = requests.get(image_url, timeout=10).content
-
-        with open(filename, "wb") as f:
-            f.write(img_data)
-
-        return filename
-
+        response = requests.get(
+            "https://api.unsplash.com/photos/random",
+            params={
+                "query": query,
+                "client_id": UNSPLASH_ACCESS_KEY,
+                "orientation": "landscape"
+            },
+            timeout=10
+        )
+        if response.status_code == 200:
+            data = response.json()
+            if "urls" in data:
+                return download_image(data["urls"]["regular"], filename)
     except Exception as e:
-        print(f"❌ fetch_image failed for '{query}':", e)
-        return None  # ✅ PPT continues without image instead of crashing
+        print(f"❌ Unsplash fallback failed: {e}")
+
+    return None
 
 
+# =========================
+# 🌐 FETCH IMAGE URL (for preview)
+# (tries Tavily first, then Unsplash)
+# =========================
 def fetch_image_url(query):
-    url = "https://api.unsplash.com/photos/random"
+    # ✅ Try Tavily first
+    tavily_url = fetch_tavily_image(query)
+    if tavily_url:
+        return tavily_url
 
-    params = {
-        "query": query,
-        "client_id": UNSPLASH_ACCESS_KEY,
-        "orientation": "landscape"
-    }
-
+    # ✅ Fallback to Unsplash
     try:
-        response = requests.get(url, params=params, timeout=10)
-
-        if response.status_code != 200:
-            print("❌ Unsplash API error:", response.status_code, response.text)
-            return None
-
-        data = response.json()
-
-        if "urls" not in data:
-            print("❌ No image found for:", query)
-            return None
-
-        return data["urls"]["small"]
-
+        response = requests.get(
+            "https://api.unsplash.com/photos/random",
+            params={
+                "query": query,
+                "client_id": UNSPLASH_ACCESS_KEY,
+                "orientation": "landscape"
+            },
+            timeout=10
+        )
+        if response.status_code == 200:
+            data = response.json()
+            if "urls" in data:
+                return data["urls"]["small"]
     except Exception as e:
-        print("❌ Image fetch error:", e)
-        return None
+        print(f"❌ fetch_image_url error: {e}")
+
+    return None

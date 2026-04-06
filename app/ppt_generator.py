@@ -5,10 +5,11 @@ from pptx.enum.text import PP_ALIGN
 from app.image_service import fetch_image
 import os
 import uuid
+import tempfile
 
 def create_ppt(data, filename=None):
     if not filename:
-        filename = f"{uuid.uuid4()}.pptx"
+        filename = os.path.join(tempfile.gettempdir(), f"{uuid.uuid4()}.pptx")
 
     prs = Presentation()
 
