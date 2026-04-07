@@ -62,14 +62,19 @@ def create_ppt(data, filename=None):
         # =========================
         # 🖼 IMAGE (RIGHT SIDE)
         # =========================
-        if image_path and os.path.exists(image_path):
-            slide.shapes.add_picture(
-                image_path,
-                Inches(6.5),
-                Inches(2),
-                width=Inches(3)
-            )
-            os.remove(image_path)
+        try:
+            if image_path and os.path.exists(image_path):
+                slide.shapes.add_picture(
+                    image_path,
+                    Inches(6.5),
+                    Inches(2),
+                    width=Inches(3)
+                )
+                os.remove(image_path)
+        except Exception as e:
+            print(f"⚠️ Skipping image for slide '{slide_data['heading']}': {e}")
+            if image_path and os.path.exists(image_path):
+                os.remove(image_path)
 
         # =========================
         # 🎨 ACCENT LINE

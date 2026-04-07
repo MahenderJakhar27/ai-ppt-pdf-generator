@@ -42,11 +42,18 @@ def download_image(url, filename=None):
         filename = os.path.join(tempfile.gettempdir(), f"{uuid.uuid4()}.jpg")
     try:
         img_data = requests.get(url, timeout=10).content
+
+
+        from PIL import Image
+        import io
+        Image.open(io.BytesIO(img_data)).verify()
+
         with open(filename, "wb") as f:
             f.write(img_data)
         return filename
+
     except Exception as e:
-        print(f"❌ Image download failed: {e}")
+        print(f"❌ Image download/validation failed: {e}")
         return None
 
 
